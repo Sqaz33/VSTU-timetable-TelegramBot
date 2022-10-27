@@ -1,16 +1,23 @@
 from loader import excel_loader
 from datetime import datetime
 from url_parser import links_parser
+from del_data import delet_excel
 
-flag = 1
+flag, passes = 1, []
+
 
 if __name__ == '__main__':
     while True:
-        if str(datetime.now().hour) == '20' and flag:
+        if str(datetime.now().hour) == '14' and flag:
+
+            #удаление предидущих таблиц
+            delet_excel(passes)
+
+            #загрузка таблиц
             links = links_parser()
-            excel_loader(links)
+            passes = excel_loader(links)
 
             flag = 0
-        elif str(datetime.now().hour) == '21':
+        elif str(datetime.now().hour) == '15':
             flag = 1
 
