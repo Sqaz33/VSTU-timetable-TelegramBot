@@ -20,23 +20,23 @@ def links_loader(faculti):
 def links_packer():
     """Упаковывает факультеты"""
     faculties = ['fastiv', 'fat', 'ftkm', 'ftpp', 'feu', 'fevt', 'htf', 'vkf', 'mmf', 'fpik']
-    faculti_links = []
+    load_links = []
 
     for faculti in faculties:
         links_now = []
         links_now.append(faculti)
         links_now.append(links_loader(faculti))
-        faculti_links.append(links_now)
+        load_links.append(links_now)
 
-    return faculti_links
+    return load_links
 
 
-def links_parser():
+def links_parser(): #функция высшего порядка
     """модуль переделывающий url"""
-    faculti_links = links_packer()
+    load_links = links_packer()
     links = []
 
-    for i in faculti_links:
+    for i in load_links:
         faculti = i[0]
         URLs = [f'https://www.vstu.ru/upload/raspisanie/z/{urllib.parse.quote(j)}' for j in i[1]]
 

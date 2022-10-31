@@ -8,7 +8,7 @@ flag, passes = 1, []
 
 if __name__ == '__main__':
     while True:
-        if str(datetime.now().hour) == '14' and flag:
+        if str(datetime.now().hour) == '15' and flag or True:
 
             #удаление предидущих таблиц
             delet_excel(passes)
@@ -18,6 +18,6 @@ if __name__ == '__main__':
             passes = excel_loader(links)
 
             flag = 0
-        elif str(datetime.now().hour) == '15':
+        elif str(datetime.now().hour) == '14':
             flag = 1
 
