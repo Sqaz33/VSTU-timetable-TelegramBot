@@ -8,4 +8,4 @@ def delet_excel(passes):
             path = os.path.join(os.path.abspath(os.path.dirname(__file__)), i)
             os.remove(path)
 
-    pass
+        print('таблицы удалены') #заменить на логгер

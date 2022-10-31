@@ -13,10 +13,10 @@ def excel_loader(links):
             URL = i[1][key]
             file_name = i[0]
             excel_name = key
-            destination = f'C:/Users/mset6/OneDrive/Рабочий стол/VSTU-timetable-TelegramBot/data/{file_name}/{excel_name}'
+            destination = f'C:/Users/Степан/Documents/GitHub/VSTU-timetable-TelegramBot/data/{file_name}/{excel_name}'
             passes.append(destination)
 
             urllib.request.urlretrieve(URL, destination)
-            print(f'{excel_name} загружен') #переделать на логер
+            print(f'{excel_name} загружен') #заменить на логгер
 
     return passes

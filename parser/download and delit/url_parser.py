@@ -17,9 +17,8 @@ def links_loader(faculti):
         return clean_href
 
 
-def links_packer():
+def links_packer(faculties):
     """Упаковывает факультеты"""
-    faculties = ['fastiv', 'fat', 'ftkm', 'ftpp', 'feu', 'fevt', 'htf', 'vkf', 'mmf', 'fpik']
     load_links = []
 
     for faculti in faculties:
@@ -31,9 +30,9 @@ def links_packer():
     return load_links
 
 
-def links_parser(): #функция высшего порядка
+def links_parser(faculties): #функция высшего порядка
     """модуль переделывающий url"""
-    load_links = links_packer()
+    load_links = links_packer(faculties)
     links = []
 
     for i in load_links:
