@@ -30,7 +30,7 @@ def links_packer(faculties):
     return load_links
 
 
-def links_parser(faculties): #функция высшего порядка
+def links_parser(faculties):
     """модуль переделывающий url"""
     load_links = links_packer(faculties)
     links = []

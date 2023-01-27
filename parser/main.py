@@ -5,13 +5,14 @@ from loader import excel_loader
 from datetime import datetime
 from url_parser import links_parser
 from del_data import delet_excel
+from format_change import changef
 
 flag, passes = 1, []
-faculties = ['fastiv', 'fat', 'ftkm', 'ftpp', 'feu', 'fevt', 'htf', 'vkf', 'mmf', 'fpik', 'mag', 'asp']
+faculties = ['fastiv', 'fat', 'ftkm', 'ftpp', 'feu', 'fevt', 'htf', 'mag']
 
 if __name__ == '__main__':
     while True:
-        if str(datetime.now().second) == '1' and flag:  #заменить после пр:
+        if str(datetime.now().second) == '1' and flag:  #заменить после окончания разработки:
             program_start = time.time()
 
             #удаление предидущих таблиц
@@ -21,6 +22,8 @@ if __name__ == '__main__':
             #загрузка таблиц
             links = links_parser(faculties)
             passes, program_time = excel_loader(links)
+
+            passes = changef(passes)
 
             if len(passes) == 104:
                 print(f'ВСЕ файлы ЗАГРУЖЕННЫ за {program_time} секунд')  #заменить на логгер
