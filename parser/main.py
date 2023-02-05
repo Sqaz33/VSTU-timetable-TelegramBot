@@ -1,3 +1,5 @@
+"""VSTU TimeTableParser v 0.5 beta"""
+
 import sys, time
 sys.path.insert(0, 'C:/Users/mset6/OneDrive/Рабочий стол/VSTU-timetable-TelegramBot/parser/download and delit')
 
