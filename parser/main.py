@@ -14,7 +14,7 @@ faculties = ['fastiv', 'fat', 'ftkm', 'ftpp', 'feu', 'fevt', 'htf', 'mag']
 
 if __name__ == '__main__':
     while True:
-        if str(datetime.now().second) == '1' and flag:  #заменить после окончания разработки:
+        if str(datetime.now().hour) == '10' and flag:  #заменить после окончания разработки:
             program_start = time.time()
 
             #удаление предидущих таблиц
@@ -37,6 +37,6 @@ if __name__ == '__main__':
 
             flag = 0
             print(f'Лоадер завершил работу за {program_stop-program_start}') #заменить на логгер
-        elif str(datetime.now().second) == '2':
+        elif str(datetime.now().hour) == '19':
             flag = 1
 

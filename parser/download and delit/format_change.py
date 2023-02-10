@@ -3,7 +3,7 @@ import os
 
 
 def xls_to_xlsx(fname):
-    """хз, что он делает: украл с стаковерфлоу"""
+    """не знаю, что он делает: украл с стаковерфлоу"""
 
     excel = win32.gencache.EnsureDispatch('Excel.Application')
     wb = excel.Workbooks.Open(fname)
