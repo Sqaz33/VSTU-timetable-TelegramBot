@@ -10,15 +10,16 @@ def cell_analysis(big_cell):
     subject = 0
     teacher = 0
     cabinet = 0
-    others_symbol = [' ', '(', ')', '.', ',', '«', '»', '-']
+    others_symbol = (' ', '(', ')', '.', ',', '«', '»', '-')
 
     for value in big_cell:
-        if all(i.isupper() or i in others_symbol for i in str(value)) or all(i in str(value).lower() for i in ['физ', 'куль']):
+        if all(i.isupper() or i in others_symbol for i in str(value)) or all(i in str(value).lower() for i in ('физ', 'куль')):
             subject += 1
-        if len([i for i in str(value) if i.isdigit()]) == 0 and 0 < len([i for i in str(value) if i.isupper()]) <= 3 \
-                and len([i for i in str(value) if i.islower()]) >= 3:
+        if (len([i for i in str(value) if i.isdigit()]) == 0 and 0 < len([i for i in str(value) if i.isupper()]) <= 3 \
+                and len([i for i in str(value) if i.islower()]) >= 3) or any(i in str(value).lower() for i in ('доц', 'ст.преп.')):
             teacher += 1
-        if len([i for i in str(value) if i.isdigit()]) > 0 and len([i for i in str(value) if i.isupper()]) <= 2:
+        if len([i for i in str(value) if i.isdigit()]) > 0 and len([i for i in str(value) if i.isupper()]) <= 2 \
+                or any(i in str(value).lower() for i in ('улк', 'гук')):
             cabinet += 1
 
     if len(big_cell) == 3 and (subject, teacher) == (1, 0)\
@@ -125,6 +126,9 @@ def get_value(sheet, big_row, big_column):
         if value == 'ФИО':
             big_cell[big_cell.index(value)] = 'ФИО преподавателя'
 
+    if len(big_cell) == 2 and cell_analysis(big_cell) == (2, 0, 0):
+        big_cell = [big_cell[0] + big_cell[1]]
+
     return big_cell
 
 
@@ -165,7 +169,7 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
                             column_buffer.append([big_row, big_column])
 
                     case 1:
-                        if big_cell_value == (1, 0, 0):
+                        if big_cell_value == (1, 0, 0) and cell_analysis(get_value(sheet, big_row, big_column + 4)) != (0, 1, 0):
                             column_buffer.append(big_cell + [big_row, big_column])
                         elif big_cell_value == (0, 0, 1) and \
                                 not any([i[-2]+3, i[-1]] == [big_row, big_column] for i in column_buffer):
@@ -181,6 +185,11 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
                                 day_timetable[(i - 6) // 4 - 1][1].append(subject)
 
                             row_buffer = []
+
+                        """обрабатывает 1 значение в бк лекции"""
+                        if big_cell_value == (1, 0, 0) and cell_analysis(get_value(sheet, big_row, big_column + 4)) == (0, 1, 0):
+                            row_buffer.append(big_cell + get_value(sheet, big_row, big_column + 4) + [big_row, big_column])
+
 
                         """обрабатывает случай, когда  лаба на 3 пары и на каждую БК 1 значение"""
                         if big_cell_value == (0, 0, 1) and len(row_buffer) == 0  \
@@ -219,17 +228,19 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
                         """обрабатывает начало лекции"""
                         if big_cell_value == (1, 1, 0):
                             row_buffer.append(big_cell + [big_row, big_column])
-                        elif big_cell_value == (0, 1, 1) and not len([i for i in column_buffer if i[-1] == big_column]) == 2:
-                            """обработа лабы c 2 значениями"""
+                        elif len(row_buffer) == 0 and big_cell_value == (0, 1, 1) \
+                                and not len([i for i in column_buffer if i[-1] == big_column]) == 2:
+                            """обработа лабы c 2 конечными значениями"""
                             for group in column_buffer:
-                                if [group[1]+3, group[2]] == [big_row, big_column]:
+                                if [group[-2]+3, group[-1]] == [big_row, big_column]:
                                     subject = [group[0]] + big_cell + \
                                               [f'{(group[1] - day + 17) // 3 + 1}-{(big_row - day + 17) // 3 + 1}']
                                     day_timetable[(big_column - 6) // 4 - 1][1].append(subject)
                                     column_buffer.pop(column_buffer.index(group))
 
                             """работает с лабами в 3-х парах, где 2 значения в последней БК"""
-                        if big_cell_value == (0, 1, 1) and len([i for i in column_buffer if i[-1] == big_column]) == 2:
+                        if len(row_buffer) == 0 and big_cell_value == (0, 1, 1) \
+                                and len([i for i in column_buffer if i[-1] == big_column]) == 2:
                             for group in column_buffer:
                                 if [group[-2]+6, group[-1]] == [big_row, big_column]:
                                     subject = group[0]
@@ -248,12 +259,36 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
                             column_buffer.append([big_cell[0]] + [big_row, big_column])
                             column_buffer.append([big_cell[1]] + [big_row, big_column])
 
+                        """обрабатывает физру у других факультетов"""
+                        if big_cell_value == (0, 1, 1) and len(row_buffer) > 0 \
+                            and all(i in str(row_buffer[0][0]).lower().replace(' ', '') for i in ['физ', 'куль']) \
+                            and cell_analysis(get_value(sheet, big_row, big_column + 4)) == (0, 1, 1) \
+                                and not any([i[-2]+3, i[-1]-4] == [big_row, big_column] for i in column_buffer):
+                            row_buffer.append(big_cell + [big_row, big_column])
+                        elif len(row_buffer) > 0 and big_cell_value == (0, 1, 1) \
+                            and (cell_analysis(get_value(sheet, big_row, big_column + 4)) != (0, 1, 1) \
+                                 or any([i[-2]+3, i[-1]-4] == [big_row, big_column] for i in column_buffer)):
+
+                            row_buffer.append(big_cell + [big_row, big_column])
+
+                            for group in row_buffer[1:]:
+                                subject = [row_buffer[0][0], group[0], group[1],
+                                           str((big_row - day + 17) // 3 + 1)]
+                                day_timetable[(group[-1] - 6) // 4 - 1][1].append(subject)
+
+                            subject = [row_buffer[0][0], row_buffer[0][1], row_buffer[0][2],
+                                       str((big_row - day + 17) // 3 + 1)]
+
+                            day_timetable[(row_buffer[0][-1] - 6) // 4 - 1][1].append(subject)
+                            row_buffer = []
+
                     case _:
                         if sum(big_cell_value) % 2 == 0 \
                                 and not(len([i for i in column_buffer if [i[-2]+3, i[-1]] == [big_row, big_column]]) == 2):
                             """обрабатывает почти все концы лаб и некоторые практики"""
 
-                            if big_cell_value[0] == 0 and all(i % 2 == 0 and i > 0 for i in big_cell_value[1:]):
+                            if big_cell_value[0] == 0 and all(i % 2 == 0 and i > 0 for i in big_cell_value[1:]) \
+                                    and len(row_buffer) == 0:
                                 """обрабатывает лабы с нормальными значениями"""
                                 for group in column_buffer:
                                     if [group[1] + 3, group[2]] == [big_row, big_column]:
@@ -262,7 +297,8 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
                                         day_timetable[(big_column - 6) // 4 - 1][1].append(subject)
                                         column_buffer.pop(column_buffer.index(group))
 
-                            elif big_cell_value[0] == 1 and big_cell_value[1] % 2 == 0 and big_cell_value[2] % 2 != 0:
+                            elif big_cell_value[0] == 1 and big_cell_value[1] % 2 == 0 and big_cell_value[2] % 2 != 0 \
+                                    and len(row_buffer) == 0:
                                 """обрабатывает практики с НЕнормальными значениями"""
                                 subject = big_cell + [str((big_row - day + 17) // 3 + 1)]
                                 day_timetable[(big_column - 6) // 4 - 1][1].append(subject)
@@ -270,8 +306,8 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
                         elif len([i for i in column_buffer if [i[-2]+3, i[-1]] == [big_row, big_column]]) != 2:
 
                             """обрабатывает почти все практики, и некоторые концы лаб"""
-                            if (big_cell_value[0] == 1 and big_cell_value[1] == big_cell_value[2]) \
-                                    or big_cell_value == (1, 1, 1):
+                            if ((big_cell_value[0] == 1 and big_cell_value[1] == big_cell_value[2]) \
+                                    or big_cell_value == (1, 1, 1)) and not all(i in str(big_cell[0]).lower().replace(' ', '') for i in ['физ', 'куль']):
                                 if not any([i[-2]+3, i[-1]] == [big_row, big_column] for i in column_buffer):
                                     subject = big_cell + [str((big_row - day + 17) // 3 + 1)]
                                     day_timetable[(big_column - 6) // 4 - 1][1].append(subject)
@@ -305,11 +341,17 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
                                 """обрабатывает лабы с НЕнормальными значениями"""
 
                                 for group in column_buffer:
-                                    if [group[1]+3, group[2]] == [big_row, big_column]:
+                                    if [group[-2]+3, group[-1]] == [big_row, big_column]:
                                         subject = [group[0]] + big_cell + \
                                                   [f'{(group[1] - day + 17) // 3 + 1}-{(big_row - day + 17) // 3 + 1}']
                                         day_timetable[(big_column - 6) // 4 - 1][1].append(subject)
                                         column_buffer.pop(column_buffer.index(group))
+
+                            """заносит физру у других факультетов"""
+                            if big_cell_value == (1, 1, 1) \
+                                and all(i in str(big_cell[0]).lower().replace(' ', '') for i in ['физ', 'куль'])\
+                                and not any([i[-2]+3, i[-1]-4] == [big_row, big_column] for i in column_buffer):
+                                row_buffer.append(big_cell + [big_row, big_column])
 
                         """Обрабатывает случай с двумя лабами"""
                         if len([i for i in column_buffer if [i[-2]+3, i[-1]] == [big_row, big_column]]) == 2:
@@ -339,30 +381,23 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
 
 
 
+def huyach():
+    two_week_timetable = []
 
+    global day, day_place_left, month_in_dok, new_groups
+    for day in range(groups_row, 109+groups_row, 18):
+        print(day)
+        if day-17 > 0:
+            two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups)
 
-two_week_timetable = []
+    for day in range(109+groups_row, 219+groups_row, 18):
+        print(day)
+        if day - 17 > 109 + groups_row:
+            two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups)
+    return two_week_timetable
 
-"""for day in range(groups_row, 109+groups_row, 18):
-    if day-17 > 0:
-        two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups)
-
-for day in range(109+groups_row, 219+groups_row, 18):
-    if day - 17 > 109 + groups_row:
-        two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups)
-"""
-
-
-
-
+print(huyach())
 
 time_stop = time.time()
 
 print(time_stop-time_start)
-"""
-print(two_week_timetable)
-
-for day in two_week_timetable:
-    for group in day:
-        print(group)
-"""

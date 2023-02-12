@@ -2,12 +2,14 @@
 
 import sys, time
 sys.path.insert(0, 'C:/Users/mset6/OneDrive/Рабочий стол/VSTU-timetable-TelegramBot/parser/download and delit')
+sys.path.insert(0, 'C:/Users/mset6/OneDrive/Рабочий стол/VSTU-timetable-TelegramBot/parser/excel analysis')
 
 from loader import excel_loader
 from datetime import datetime
 from url_parser import links_parser
 from del_data import delet_excel
 from format_change import changef
+from excel_analysis import huyach
 
 flag, passes = 1, []
 faculties = ['fastiv', 'fat', 'ftkm', 'ftpp', 'feu', 'fevt', 'htf', 'mag']
@@ -34,6 +36,7 @@ if __name__ == '__main__':
 
             program_stop = time.time()
 
+            huyach(passes)
 
             flag = 0
             print(f'Лоадер завершил работу за {program_stop-program_start}') #заменить на логгер
