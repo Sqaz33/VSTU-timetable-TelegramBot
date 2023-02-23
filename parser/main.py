@@ -1,4 +1,8 @@
-"""VSTU TimeTableParser v 0.5 beta"""
+"""
+VSTU TimeTableParser v 0.9FFevtO*
+================================
+*FFevtO - For Fevt Only, Только для ФэВт
+"""
 
 import sys, time
 sys.path.insert(0, 'C:/Users/mset6/OneDrive/Рабочий стол/VSTU-timetable-TelegramBot/parser/download and delit')
