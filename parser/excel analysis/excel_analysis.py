@@ -1,7 +1,7 @@
 import openpyxl as xl
 import time
 
-book = xl.open('ОН_ХТФ_1 курс.xlsx', read_only=True)
+book = xl.open('ОН_ФЭВТ_4 курс.xlsx', read_only=True, data_only=True)
 sheet = book.active
 
 
@@ -12,11 +12,14 @@ def cell_analysis(big_cell):
     cabinet = 0
     others_symbol = (' ', '(', ')', '.', ',', '«', '»', '-')
 
+
     for value in big_cell:
-        if all(i.isupper() or i in others_symbol for i in str(value)) or all(i in str(value).lower() for i in ('физ', 'куль')):
+        small_symbol = len([i for i in str(value) if i.islower()]) <= 1
+
+        if (all((not i.isdigit()) and (i.isupper() or i in others_symbol or small_symbol) for i in str(value)) or all(i in str(value).lower() for i in ('физ', 'куль'))) and value != 'Х':
             subject += 1
         if (len([i for i in str(value) if i.isdigit()]) == 0 and 0 < len([i for i in str(value) if i.isupper()]) <= 3 \
-                and len([i for i in str(value) if i.islower()]) >= 3) or any(i in str(value).lower() for i in ('доц', 'ст.преп.')):
+                and len([i for i in str(value) if i.islower()]) >= 3) or any(i in str(value).lower() for i in ('доц', 'ст.преп.')) or value == 'Х':
             teacher += 1
         if len([i for i in str(value) if i.isdigit()]) > 0 and len([i for i in str(value) if i.isupper()]) <= 2 \
                 or any(i in str(value).lower() for i in ('улк', 'гук')):
@@ -106,13 +109,13 @@ def date_analys(day, day_place_left, month_in_dok):
 
 
 def get_value(sheet, big_row, big_column):
-    #извлекает значения из больших клеток
+    """извлекает значения из больших клеток"""
     big_cell = []
     for row in sheet.iter_rows(big_row - 2, big_row, big_column - 3, big_column):
         for cell in row:
             value = cell.value
             if value != None \
-                    and not any(i in str(value).lower() for i in ['п/г', 'п/п', ' час', 'лб', 'лаб', ' лек', 'гр ']) \
+                    and ((not any(i in str(value).lower() for i in ['п/г', 'п/п', ' час', 'лб', 'лаб', ' лек', 'гр '])) or 'части' in str(value).lower())\
                     and (len([i for i in str(value) if i.isdigit()]) <= 5 and len([i for i in str(value) if i == '-']) <= 2):
                 big_cell.append(value)
             elif value != None and ',' in str(value) and not(len([i for i in str(value) if i == '.']) >= 2 \
@@ -127,7 +130,27 @@ def get_value(sheet, big_row, big_column):
             big_cell[big_cell.index(value)] = 'ФИО преподавателя'
 
     if len(big_cell) == 2 and cell_analysis(big_cell) == (2, 0, 0):
-        big_cell = [big_cell[0] + big_cell[1]]
+        left_side_length = []
+        right_side_length = []
+
+        for row in sheet.iter_rows(big_row - 2, big_row, big_column - 3, big_column - 2):
+            for cell in row:
+                if cell.value != None:
+                    left_side_length.append(cell.value)
+        for row in sheet.iter_rows(big_row - 2, big_row, big_column - 1, big_column):
+            for cell in row:
+                if cell.value != None:
+                    right_side_length.append(cell.value)
+
+        if len(left_side_length) == 0 or len(right_side_length) == 0:
+            big_cell = [big_cell[0] + big_cell[1]]
+
+    if len(big_cell) == 4 and cell_analysis(big_cell) == (4, 0, 0):
+        big_cell = [big_cell[0] + big_cell[2], big_cell[1] + big_cell[3]]
+
+    if len(big_cell) == 3 and cell_analysis(big_cell) == (3, 0, 0):
+        """если в БК 3 значение предмета, потом доделать"""
+        pass
 
     return big_cell
 
@@ -291,9 +314,9 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
                                     and len(row_buffer) == 0:
                                 """обрабатывает лабы с нормальными значениями"""
                                 for group in column_buffer:
-                                    if [group[1] + 3, group[2]] == [big_row, big_column]:
+                                    if [group[-2] + 3, group[-1]] == [big_row, big_column]:
                                         subject = [group[0]] + big_cell + \
-                                                  [f'{(group[1] - day + 17) // 3 + 1}-{(big_row - day + 17) // 3 + 1}']
+                                                  [f'{(group[-2] - day + 17) // 3 + 1}-{(big_row - day + 17) // 3 + 1}']
                                         day_timetable[(big_column - 6) // 4 - 1][1].append(subject)
                                         column_buffer.pop(column_buffer.index(group))
 
@@ -362,9 +385,9 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
                             for row in sheet.iter_rows(big_row - 2, big_row, big_column - 3, big_column):
                                 for cell in row:
                                     if cell.value != None:
-                                        if (big_column - cell.column - 3) // 2 == 0:
+                                        if (big_column - cell.column) >= 2:
                                             for_one_subject.append(cell.value)
-                                        elif (big_column - cell.column - 3) // 2 * -1 == 1:
+                                        elif (big_column - cell.column) < 2:
                                             for_two_subject.append(cell.value)
 
                             subject = [subjects[0][0]] + for_one_subject + \
@@ -381,22 +404,30 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
 
 
 
-def huyach():
-    two_week_timetable = []
 
-    global day, day_place_left, month_in_dok, new_groups
-    for day in range(groups_row, 109+groups_row, 18):
-        print(day)
-        if day-17 > 0:
-            two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups)
 
-    for day in range(109+groups_row, 219+groups_row, 18):
-        print(day)
-        if day - 17 > 109 + groups_row:
-            two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups)
-    return two_week_timetable
 
-print(huyach())
+two_week_timetable = []
+
+for i in day_timetable_analys(24, day_place_left, month_in_dok, new_groups):
+    print(i)
+
+
+
+for day in range(groups_row, 109+groups_row, 18):
+    print(day)
+    if day-17 > 0:
+        two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups)
+
+for day in range(109+groups_row, 219+groups_row, 18):
+    print(day)
+    if day - 17 > 109 + groups_row:
+        two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups)
+
+
+
+print(two_week_timetable)
+
 
 time_stop = time.time()
 
