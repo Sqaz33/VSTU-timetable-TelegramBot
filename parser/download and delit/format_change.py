@@ -1,4 +1,3 @@
-import win32com.client as win32
 import os
 from xls2xlsx import XLS2XLSX
 
