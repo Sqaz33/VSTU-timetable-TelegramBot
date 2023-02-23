@@ -5,7 +5,7 @@ import time
 month = ('январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
          'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь')
 days = ('понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота')
-
+times = ('08:30 - 10:00', '10:10 - 11:40', '11:50 - 13:20', '13:40 - 15:10', '15:20 - 16:50', '17:00 - 18:30')
 
 
 def cell_analysis(big_cell):
@@ -86,7 +86,7 @@ def group_append(sheet):
     return day_place_left, groups_row, month_in_dok, new_groups
 
 
-def date_analys(day, day_place_left, month_in_dok):
+def date_analys(day, day_place_left, month_in_dok, sheet):
     """определяет даты на которые строит рассписание дня"""
     days_cell = []
     dates = []
@@ -160,13 +160,13 @@ def get_value(sheet, big_row, big_column):
     return big_cell
 
 
-def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
+def day_timetable_analys(day, day_place_left, month_in_dok, new_groups, sheet):
     """анализирует рассписание на  день и создает временный список с группами"""
     day_timetable = [] #временный список Х
     column_buffer = []
     row_buffer = []
 
-    dates = date_analys(day, day_place_left, month_in_dok)
+    dates = date_analys(day, day_place_left, month_in_dok, sheet)
 
     for i in new_groups:
         one_day_group = []
@@ -409,7 +409,68 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
 
 
 def timetable_rework(two_week_timetable):
-    pass
+    """приводим в порядок рассписание на две недели"""
+
+    faculty_timetable = []
+    global times
+
+    """изменяем порядок учителей и кабинетов, добавляем врямя заместо номера пары"""
+    for group in two_week_timetable:
+        for subject in group[1][1:]:
+            new_order = []
+            teacher = []
+            offices = []
+
+            if len(subject[-1]) == 1:
+                time = times[int(subject[-1]) - 1]
+            else:
+                time = f'{times[int(subject[-1][0]) - 1][0:5]} - {times[int(subject[-1][2]) - 1][-5:]}'
+
+            for position in subject[0:-1]:
+                match cell_analysis([position]):
+                    case (1, 0, 0):
+                        new_order.append(position)
+                    case (0, 1, 0):
+                        teacher.append(position)
+                    case(0, 0, 1):
+                        offices.append(position)
+
+            if len(teacher) == len(offices):
+                new_order = subject[0:-1] + [time]
+                group[1][group[1].index(subject)] = new_order
+            elif len(teacher) < len(offices):
+                for ind in range(0, len(teacher)):
+                    new_order.append(teacher[ind])
+                    new_order.append(offices[ind])
+                new_order += offices[ind+1:]
+                new_order.append(times)
+                group[1][group[1].index(subject)] = new_order
+            else:
+                for ind in range(0, len(offices)):
+                    new_order.append(teacher[ind])
+                    new_order.append(offices[ind])
+                new_order += teacher[ind+1:]
+                new_order.append(times)
+                group[1][group[1].index(subject)] = new_order
+
+
+    """группируем рассписание по группам"""
+    groups = []
+    for day in two_week_timetable:
+        if day[0] not in groups:
+            groups.append(day[0])
+
+    for group in groups:
+        group_timetable = []
+        group_timetable.append(group)
+
+        for day in two_week_timetable:
+            if day[0] == group:
+                group_timetable.append(day[1])
+
+        faculty_timetable.append(group_timetable)
+
+    return faculty_timetable
 
 
 def get_timetable(passes):
@@ -426,11 +487,17 @@ def get_timetable(passes):
         two_week_timetable = []
         for day in range(groups_row, 109+groups_row, 18):
             if day-17 > 0:
-                two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups)
+                two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups, sheet)
 
         for day in range(109+groups_row, 219+groups_row, 18):
             if day - 17 > 109 + groups_row:
-                two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups)
+                two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups, sheet)
+
+        timetable += timetable_rework(two_week_timetable)
 
     time_stop = time.time()
+
+    return timetable, time_stop - time_start
+
+
 

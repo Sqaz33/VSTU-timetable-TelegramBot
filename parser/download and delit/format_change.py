@@ -1,17 +1,14 @@
 import win32com.client as win32
 import os
+from xls2xlsx import XLS2XLSX
 
 
 def xls_to_xlsx(fname):
     """не знаю, что он делает: украл с стаковерфлоу"""
 
-    excel = win32.gencache.EnsureDispatch('Excel.Application')
-    wb = excel.Workbooks.Open(fname)
-
     new_path = fname+'x'
-    wb.SaveAs(new_path, FileFormat=51)    #FileFormat = 51 is for .xlsx extension
-    wb.Close()                             #FileFormat = 56 is for .xls extension
-    excel.Application.Quit()
+    x2x = XLS2XLSX(fname)
+    wb = x2x.to_xlsx(new_path)
 
     return new_path
 
