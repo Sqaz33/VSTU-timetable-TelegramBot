@@ -5,11 +5,13 @@ VSTU TimeTableParser v 0.9FFevtO*
 """
 
 """необходима настройка"""
-programm_path = 'Путь до папки VSTU-timetable-TelegramBot \: - такой слэш заменяешь на / такой' 
+programm_path = 'C:/Users/mset6/OneDrive/Рабочий стол/'
 
 
 import sys, time, json
 sys.path.insert(0, programm_path + 'VSTU-timetable-TelegramBot/parser/download and delit')
+
+
 
 from loader import excel_loader
 from datetime import datetime
@@ -54,4 +56,3 @@ if __name__ == '__main__':
             flag = 0
         elif str(datetime.now().minute) == 10:
             flag = 1
-
