@@ -17,8 +17,9 @@ def cell_analysis(big_cell):
 
     for value in big_cell:
         small_symbol = len([i for i in str(value) if i.islower()]) <= 1
+        one_digit = len([i for i in str(value) if i.isdigit()]) <= 1
 
-        if (all((not i.isdigit()) and (i.isupper() or i in others_symbol or small_symbol) for i in str(value)) or all(i in str(value).lower() for i in ('физ', 'куль'))) and value != 'Х':
+        if (all(one_digit and (i.isupper() or i in others_symbol or small_symbol) for i in str(value)) or all(i in str(value).lower() for i in ('физ', 'куль'))) and value != 'Х':
             subject += 1
         if (len([i for i in str(value) if i.isdigit()]) == 0 and 0 < len([i for i in str(value) if i.isupper()]) <= 3 \
                 and len([i for i in str(value) if i.islower()]) >= 3) or any(i in str(value).lower() for i in ('доц', 'ст.преп.')) or value == 'Х':
@@ -122,11 +123,11 @@ def get_value(sheet, big_row, big_column):
             if value != None \
                     and ((not any(i in str(value).lower() for i in ['п/г', 'п/п', ' час', 'лб', 'лаб', ' лек', 'гр '])) or 'части' in str(value).lower())\
                     and (len([i for i in str(value) if i.isdigit()]) <= 5 and len([i for i in str(value) if i == '-']) <= 2):
-                big_cell.append(value)
+                big_cell.append(str(value).replace(' ', ''))
             elif value != None and ',' in str(value) and not(len([i for i in str(value) if i == '.']) >= 2 \
                                        and len([i for i in str(value) if i.isdigit()]) >= 4) and \
                     cell_analysis([str(value)[0:str(value).index(',')], str(value)[str(value).index(','):]]) == (0, 0, 2):
-                big_cell.append(value)
+                big_cell.append(str(value).replace(' ', ''))
 
     for value in big_cell:
         if type(value) == type('x'):
@@ -134,21 +135,11 @@ def get_value(sheet, big_row, big_column):
         if value == 'ФИО':
             big_cell[big_cell.index(value)] = 'ФИО преподавателя'
 
+    """изменяет значение 2-х составных названий предметов"""
     if len(big_cell) == 2 and cell_analysis(big_cell) == (2, 0, 0):
-        left_side_length = []
-        right_side_length = []
-
-        for row in sheet.iter_rows(big_row - 2, big_row, big_column - 3, big_column - 2):
-            for cell in row:
-                if cell.value != None:
-                    left_side_length.append(cell.value)
-        for row in sheet.iter_rows(big_row - 2, big_row, big_column - 1, big_column):
-            for cell in row:
-                if cell.value != None:
-                    right_side_length.append(cell.value)
-
-        if len(left_side_length) == 0 or len(right_side_length) == 0:
-            big_cell = [big_cell[0] + big_cell[1]]
+        big_cell = [big_cell[0] + big_cell[1]]
+    elif len(big_cell) > 2 and cell_analysis(big_cell)[0] == 2:
+        big_cell = [big_cell[0] + big_cell[1]] + big_cell[2:]
 
     if len(big_cell) == 4 and cell_analysis(big_cell) == (4, 0, 0):
         big_cell = [big_cell[0] + big_cell[2], big_cell[1] + big_cell[3]]
@@ -180,15 +171,16 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups, sheet):
     else:
         left_side = len(month_in_dok) + 6
 
-    #проходит по большим рядам и большим столбцам
+    """проходит по большим рядам и большим столбцам"""
     for big_row in range(day-18, day+1, 3):
         if big_row - 2 >= day - 17:
             for big_column in range(left_side, 11+len(new_groups)*4, 4):
 
                 big_cell = get_value(sheet, big_row, big_column)
                 big_cell_value = cell_analysis(big_cell)
+                print(big_cell, big_cell_value)
 
-                #анализирует значение из клеток
+                """анализирует значения из БК"""
                 match sum(big_cell_value):
                     case 0:
                         if len(row_buffer) > 0:
@@ -375,11 +367,20 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups, sheet):
                                         day_timetable[(big_column - 6) // 4 - 1][1].append(subject)
                                         column_buffer.pop(column_buffer.index(group))
 
-                            """заносит физру у других факультетов"""
+                            """заносит лекционную физру у других факультетов"""
+
                             if big_cell_value == (1, 1, 1) \
                                 and all(i in str(big_cell[0]).lower().replace(' ', '') for i in ['физ', 'куль'])\
-                                and not any([i[-2]+3, i[-1]-4] == [big_row, big_column] for i in column_buffer):
+                                and not any([i[-2]+3, i[-1]-4] == [big_row, big_column] for i in column_buffer)\
+                                and cell_analysis(get_value(sheet, big_row, big_column+4)) == (0, 1, 1):
                                 row_buffer.append(big_cell + [big_row, big_column])
+                            elif big_cell_value == (1, 1, 1) \
+                                and all(i in str(big_cell[0]).lower().replace(' ', '') for i in ['физ', 'куль'])\
+                                and not any([i[-2]+3, i[-1]-4] == [big_row, big_column] for i in column_buffer):
+                                subject = [big_cell[0], big_cell[1], big_cell[2],
+                                           str((big_row - day + 17) // 3 + 1)]
+
+                                day_timetable[(big_column - 6) // 4 - 1][1].append(subject)
 
                         """Обрабатывает случай с двумя лабами"""
                         if len([i for i in column_buffer if [i[-2]+3, i[-1]] == [big_row, big_column]]) == 2:
@@ -445,6 +446,8 @@ def test(day, path):
         print(i)
 
 
-test(138,'C:/Users/mset6/OneDrive/Рабочий стол/VSTU-timetable-TelegramBot/data/fevt/ОН_ФЭВТ_2 курс.xlsx')
+faculti = 'fastiv'
+curse = 'ОН_ФАСТИВ_1 курс(гр.120-124).xlsx'
+day = 95
 
-
+test(day,  f'C:/Users/mset6/OneDrive/Рабочий стол/VSTU-timetable-TelegramBot/data/{faculti}/{curse}')
