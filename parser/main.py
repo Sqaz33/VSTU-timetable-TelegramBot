@@ -1,7 +1,10 @@
 """VSTU TimeTableParser v 0.5 beta"""
 
 import sys, time
-sys.path.insert(0, 'C:/Users/mset6/OneDrive/Рабочий стол/VSTU-timetable-TelegramBot/parser/download and delit')
+
+programm_path = 'C:/Users/mset6/OneDrive/Рабочий стол/'
+
+sys.path.insert(0, programm_path + 'VSTU-timetable-TelegramBot/parser/download and delit')
 
 from loader import excel_loader
 from datetime import datetime
@@ -24,7 +27,7 @@ if __name__ == '__main__':
 
             #загрузка таблиц
             links = links_parser(faculties)
-            passes, program_time = excel_loader(links)
+            passes, program_time = excel_loader(links, programm_path)
 
             passes = changef(passes)
 

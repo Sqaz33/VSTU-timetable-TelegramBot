@@ -1,8 +1,11 @@
 import openpyxl as xl
 import time
 
-book = xl.open('ОН_ФЭВТ_4 курс.xlsx', read_only=True, data_only=True)
-sheet = book.active
+
+month = ('январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
+         'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь')
+days = ('понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота')
+times = ('08:30 - 10:00', '10:10 - 11:40', '11:50 - 13:20', '13:40 - 15:10', '15:20 - 16:50', '17:00 - 18:30')
 
 
 def cell_analysis(big_cell):
@@ -11,7 +14,6 @@ def cell_analysis(big_cell):
     teacher = 0
     cabinet = 0
     others_symbol = (' ', '(', ')', '.', ',', '«', '»', '-')
-
 
     for value in big_cell:
         small_symbol = len([i for i in str(value) if i.islower()]) <= 1
@@ -22,7 +24,7 @@ def cell_analysis(big_cell):
                 and len([i for i in str(value) if i.islower()]) >= 3) or any(i in str(value).lower() for i in ('доц', 'ст.преп.')) or value == 'Х':
             teacher += 1
         if len([i for i in str(value) if i.isdigit()]) > 0 and len([i for i in str(value) if i.isupper()]) <= 2 \
-                or any(i in str(value).lower() for i in ('улк', 'гук')):
+                or any(i in str(value).lower() for i in ('улк', 'гук')) or '(classroom)' in str(value):
             cabinet += 1
 
     if len(big_cell) == 3 and (subject, teacher) == (1, 0)\
@@ -34,54 +36,57 @@ def cell_analysis(big_cell):
     return big_cell_value
 
 
-month = ('январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
-         'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь')
-days = ('понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота')
-new_groups = [] #Временные список Г
-month_in_dok = []
+def group_append(sheet):
+    """находим группы из документа"""
 
-time_start = time.time()
+    new_groups = []  # Временные список Г
+    month_in_dok = []
 
-#находим строку с группами
-flag = False
-for row in sheet.iter_rows():
-    if flag: break
-    for cell in row:
-        if not(cell.value == None) and str(cell.value).lower() in month:
-            groups_row = cell.row
-            flag = True
-            break
+    global month, days
 
-#добавляем группы
-for cell in sheet[groups_row]:
-    if not(cell.value == None) and cell.value.lower() not in month:
+    """находим строку с группами"""
+    flag = False
+    for row in sheet.iter_rows():
+        if flag: break
+        for cell in row:
+            if not(cell.value == None) and str(cell.value).lower() in month:
+                groups_row = cell.row
+                flag = True
+                break
 
-        group_new = []
-        group_new.append(cell.value)
-        new_groups.append(group_new)
+    """добавляем группы"""
+    for cell in sheet[groups_row]:
+        if not(cell.value == None) and cell.value.lower() not in month:
 
-#определяем положение названия дня недели
-day_in_dok = []
-for row in sheet.iter_rows(groups_row + 1, groups_row + 1, 1, 10):
-    for cell in row:
-        if cell.value != None and str(cell.value).lower() in days:
-           day_in_dok.append(cell.value)
+            group_new = []
+            group_new.append(cell.value)
+            new_groups.append(group_new)
 
-
-if sheet[groups_row+1][0].value != None and sheet[groups_row+1][0].value.lower() in days:
-    day_place_left = True
-elif len(day_in_dok) == 1:
-    day_place_left = False
-else:
-    day_place_left = None
+    """определяем положение названия дня недели"""
+    day_in_dok = []
+    for row in sheet.iter_rows(groups_row + 1, groups_row + 1, 1, 10):
+        for cell in row:
+            if cell.value != None and str(cell.value).lower() in days:
+               day_in_dok.append(cell.value)
 
 
-for row in sheet.iter_rows(groups_row, groups_row, 1, 10):
-    for cell in row:
-        if cell.value != None and str(cell.value).lower() in month:
-            month_in_dok.append(cell.value)
+    if sheet[groups_row+1][0].value != None and sheet[groups_row+1][0].value.lower() in days:
+        day_place_left = True
+    elif len(day_in_dok) == 1:
+        day_place_left = False
+    else:
+        day_place_left = None
 
-def date_analys(day, day_place_left, month_in_dok):
+
+    for row in sheet.iter_rows(groups_row, groups_row, 1, 10):
+        for cell in row:
+            if cell.value != None and str(cell.value).lower() in month:
+                month_in_dok.append(cell.value)
+
+    return day_place_left, groups_row, month_in_dok, new_groups
+
+
+def date_analys(day, day_place_left, month_in_dok, sheet):
     """определяет даты на которые строит рассписание дня"""
     days_cell = []
     dates = []
@@ -155,13 +160,13 @@ def get_value(sheet, big_row, big_column):
     return big_cell
 
 
-def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
+def day_timetable_analys(day, day_place_left, month_in_dok, new_groups, sheet):
     """анализирует рассписание на  день и создает временный список с группами"""
     day_timetable = [] #временный список Х
     column_buffer = []
     row_buffer = []
 
-    dates = date_analys(day, day_place_left, month_in_dok)
+    dates = date_analys(day, day_place_left, month_in_dok, sheet)
 
     for i in new_groups:
         one_day_group = []
@@ -403,32 +408,43 @@ def day_timetable_analys(day, day_place_left, month_in_dok, new_groups):
     return day_timetable
 
 
+def get_timetable(passes):
+    time_start = time.time()
+
+    timetable = []
+    for path in passes:
+
+        book = xl.open(path, read_only=True, data_only=True)
+        sheet = book.active
+
+        day_place_left, groups_row, month_in_dok, new_groups = group_append(sheet)
+
+        two_week_timetable = []
+        for day in range(groups_row, 109+groups_row, 18):
+            if day-17 > 0:
+                print(day)
+                two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups, sheet)
+
+        for day in range(109+groups_row, 219+groups_row, 18):
+            if day - 17 > 109 + groups_row:
+                print(day)
+                two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups, sheet)
+
+    print(time.time() - time_start)
+
+    return two_week_timetable
 
 
+def test(day, path):
+    book = xl.open(path, read_only=True, data_only=True)
+    sheet = book.active
+
+    day_place_left, groups_row, month_in_dok, new_groups = group_append(sheet)
+
+    for i in day_timetable_analys(day, day_place_left, month_in_dok, new_groups, sheet):
+        print(i)
 
 
-two_week_timetable = []
-
-for i in day_timetable_analys(24, day_place_left, month_in_dok, new_groups):
-    print(i)
+test(138,'C:/Users/mset6/OneDrive/Рабочий стол/VSTU-timetable-TelegramBot/data/fevt/ОН_ФЭВТ_2 курс.xlsx')
 
 
-
-for day in range(groups_row, 109+groups_row, 18):
-    print(day)
-    if day-17 > 0:
-        two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups)
-
-for day in range(109+groups_row, 219+groups_row, 18):
-    print(day)
-    if day - 17 > 109 + groups_row:
-        two_week_timetable += day_timetable_analys(day, day_place_left, month_in_dok, new_groups)
-
-
-
-print(two_week_timetable)
-
-
-time_stop = time.time()
-
-print(time_stop-time_start)
