@@ -24,7 +24,7 @@ def cell_analysis(big_cell):
                 and len([i for i in str(value) if i.islower()]) >= 3) or any(i in str(value).lower() for i in ('доц', 'ст.преп.')) or value == 'Х':
             teacher += 1
         if len([i for i in str(value) if i.isdigit()]) > 0 and len([i for i in str(value) if i.isupper()]) <= 2 \
-                or any(i in str(value).lower() for i in ('улк', 'гук')):
+                or any(i in str(value).lower() for i in ('улк', 'гук')) or '(classroom)' in str(value):
             cabinet += 1
 
     if len(big_cell) == 3 and (subject, teacher) == (1, 0)\
@@ -436,21 +436,24 @@ def timetable_rework(two_week_timetable):
                         offices.append(position)
 
             if len(teacher) == len(offices):
-                new_order = subject[0:-1] + [time]
+                for ind in range(0, len(teacher)):
+                    new_order.append(teacher[ind])
+                    new_order.append(offices[ind])
+                new_order.append(time)
                 group[1][group[1].index(subject)] = new_order
             elif len(teacher) < len(offices):
                 for ind in range(0, len(teacher)):
                     new_order.append(teacher[ind])
                     new_order.append(offices[ind])
                 new_order += offices[ind+1:]
-                new_order.append(times)
+                new_order.append(time)
                 group[1][group[1].index(subject)] = new_order
             else:
                 for ind in range(0, len(offices)):
                     new_order.append(teacher[ind])
                     new_order.append(offices[ind])
                 new_order += teacher[ind+1:]
-                new_order.append(times)
+                new_order.append(time)
                 group[1][group[1].index(subject)] = new_order
 
 
@@ -469,6 +472,9 @@ def timetable_rework(two_week_timetable):
                 group_timetable.append(day[1])
 
         faculty_timetable.append(group_timetable)
+
+    for group in two_week_timetable:
+        group[0] = str(group).lower().replace(' ', '')
 
     return faculty_timetable
 
@@ -498,6 +504,3 @@ def get_timetable(passes):
     time_stop = time.time()
 
     return timetable, time_stop - time_start
-
-
-
