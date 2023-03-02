@@ -2,7 +2,7 @@
 
 import sys, time
 
-programm_path = 'C:/Users/mset6/OneDrive/Рабочий стол/'
+programm_path = 'C:/Users/Степан/Documents/GitHub/'
 
 sys.path.insert(0, programm_path + 'VSTU-timetable-TelegramBot/parser/download and delit')
 
